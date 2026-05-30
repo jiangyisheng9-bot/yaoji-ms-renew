@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" href="/static/logo.jpg"><title>续费流水 — 妖姬马来手机号</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <a href="/" class="text-gray-400 hover:text-gray-600 mr-1">←</a>
+        <img src="/static/logo.jpg" class="h-6 w-6 rounded-full object-cover">
+        <h1 class="font-bold text-gray-800 text-base">续费流水</h1>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-xl mx-auto px-4 py-4">
+    <!-- 日期筛选 -->
+    <div class="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mb-4">
+      <form method="GET" action="/history" class="flex items-center gap-2">
+        <div class="flex-1">
+          <label class="block text-[10px] text-gray-400 mb-0.5">从</label>
+          <input type="date" name="from" value="{{ from_date }}"
+            class="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-xs outline-none focus:border-primary-400">
+        </div>
+        <span class="text-gray-300 mt-5">→</span>
+        <div class="flex-1">
+          <label class="block text-[10px] text-gray-400 mb-0.5">至</label>
+          <input type="date" name="to" value="{{ to_date }}"
+            class="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-xs outline-none focus:border-primary-400">
+        </div>
+        <button type="submit"
+          class="mt-4 rounded-lg bg-primary-500 px-3.5 py-2 text-xs font-medium text-white hover:bg-primary-600 transition">
+          查询
+        </button>
+      </form>
+    </div>
+
+    <!-- 汇总 -->
+    <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-sm mb-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-[11px] text-emerald-100">续费笔数</p>
+          <p class="text-2xl font-bold">{{ logs|length }}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-[11px] text-emerald-100">总计金额</p>
+          <p class="text-2xl font-bold">RM {{ '%.2f'|format(total_cost) }}</p>
+        </div>
+      </div>
+      <p class="text-[10px] text-emerald-200 mt-2">{{ from_date }} ~ {{ to_date }}</p>
+    </div>
+
+    <!-- 流水列表 -->
+    {% if logs|length == 0 %}
+    <div class="text-center py-12">
+      <p class="text-3xl mb-2">📭</p>
+      <p class="text-sm text-gray-400">该时段没有续费记录</p>
+    </div>
+    {% endif %}
+
+    <div class="space-y-2">
+      {% for log in logs %}
+      <div class="rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-bold text-gray-800">{{ log.phone }}</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              {% if log.provider %}<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{{ log.provider }}</span>{% endif %}
+              <span class="text-[10px] text-gray-400">{{ log.renewed_at[:10] }}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-bold text-emerald-600">RM {{ '%.2f'|format(log.cost_paid) }}</p>
+          </div>
+        </div>
+        <div class="mt-2 pt-2 border-t border-gray-50 flex items-center gap-3 text-[10px] text-gray-400">
+          <span>📅 截止：<strong class="text-gray-500">{{ log.new_deadline }}</strong></span>
+          <span>续费日：<strong class="text-gray-500">{{ log.new_renewal_date }}</strong></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <p class="text-center text-[10px] text-gray-300 mt-6 mb-4">
+      续费流水 · 可筛选日期范围
+    </p>
+  </div>
+</body>
+</html>

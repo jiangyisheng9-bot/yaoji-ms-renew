@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" href="/static/logo.jpg"><title>编辑 — 妖姬马来手机号</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-xl mx-auto px-4 h-14 flex items-center gap-2">
+      <a href="/" class="text-gray-400 hover:text-gray-600 text-lg mr-1">←</a>
+      <img src="/static/logo.jpg" class="h-6 w-6 rounded-full object-cover">
+      <h1 class="font-bold text-gray-800 text-base">编辑号码</h1>
+    </div>
+  </nav>
+
+  <div class="max-w-xl mx-auto px-4 py-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <form method="POST" id="editForm" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">手机号码 *</label>
+            <input type="tel" name="phone" required value="{{ item.phone_number }}"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">电讯商</label>
+            <select name="provider"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white">
+              <option value="">选择</option>
+              {% for p in providers %}
+              <option value="{{ p }}" {{ 'selected' if item.provider == p }}>{{ p }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">截止日期 *</label>
+            <input type="date" name="deadline" required value="{{ item.deadline }}"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              onchange="calcPreview()">
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">宽限期（天）</label>
+            <input type="number" name="grace_days" min="0" max="365" value="{{ item.grace_days }}"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              onchange="calcPreview()" oninput="calcPreview()">
+          </div>
+        </div>
+        <div class="bg-blue-50 rounded-lg px-3 py-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] text-blue-600 font-medium">📅 续费日（截止+宽限）</span>
+            <span id="renewalPreview" class="text-sm font-bold text-blue-700">{{ item.renewal_date }}</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">最低续费金额 (RM)</label>
+            <input type="number" name="min_recharge" step="0.01" min="0" value="{{ item.min_recharge or '' }}"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">提前提醒</label>
+            <select name="remind_days"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white">
+              <option value="3" {{ 'selected' if item.remind_days == 3 }}>3天前</option>
+              <option value="7" {{ 'selected' if item.remind_days == 7 }}>7天前</option>
+              <option value="10" {{ 'selected' if item.remind_days == 10 }}>10天前</option>
+              <option value="14" {{ 'selected' if item.remind_days == 14 }}>14天前</option>
+              <option value="30" {{ 'selected' if item.remind_days == 30 }}>30天前</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">卡片状态</label>
+            <select name="is_alive"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white">
+              <option value="1" {{ 'selected' if item.is_alive }}>✅ 活卡</option>
+              <option value="0" {{ 'selected' if not item.is_alive }}>📵 死卡</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-gray-500 mb-1">套餐/备注</label>
+          <textarea name="notes" rows="2" placeholder="可选的备注信息"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none">{{ item.notes }}</textarea>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 固定底部栏 -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] md:static md:shadow-none md:border-t-0">
+    <div class="max-w-xl mx-auto flex items-center gap-3 px-4 py-3">
+      <button type="submit" form="editForm"
+        class="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 text-sm font-bold text-white hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.98] transition shadow-sm text-center">
+        💾 保存更改
+      </button>
+      <a href="/"
+        class="rounded-xl border border-gray-200 bg-gray-50 px-5 py-3 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98] transition text-center">
+        取消
+      </a>
+    </div>
+  </div>
+
+  <!-- 底部占位（移动端补偿 fixed bar） -->
+  <div class="md:hidden h-[68px]" />
+
+  <script>
+    function calcPreview() {
+      const dl = document.querySelector('input[name="deadline"]').value;
+      const grace = parseInt(document.querySelector('input[name="grace_days"]').value) || 0;
+      const el = document.getElementById('renewalPreview');
+      if (dl) { const d = new Date(dl); d.setDate(d.getDate() + grace); el.textContent = d.toISOString().split('T')[0]; }
+    }
+    document.addEventListener('DOMContentLoaded', calcPreview);
+  </script>
+</body>
+</html>

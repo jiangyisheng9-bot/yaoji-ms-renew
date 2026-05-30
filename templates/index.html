@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" href="/static/logo.jpg"><title>妖姬马来手机号 — 手机号续费提醒</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif; }
+    .slide-up { animation: slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- 顶部导航 -->
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img src="/static/logo.jpg" class="h-7 w-7 rounded-full object-cover">
+        <h1 class="font-bold text-gray-800 text-base">妖姬马来手机号</h1>
+        <span class="text-[10px] bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">续费提醒</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/history" class="text-xs text-gray-500 hover:text-gray-700 font-medium">📋 流水</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-xl mx-auto px-4 py-4">
+    <!-- Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="slide-up mb-3 rounded-xl px-4 py-3 text-sm font-medium
+            {{ 'bg-green-50 text-green-700 border border-green-200' if category == 'success'
+               else 'bg-red-50 text-red-700 border border-red-200' }}">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- 统计 -->
+    <div class="grid grid-cols-3 gap-2 mb-4">
+      <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+        <p class="text-xl font-bold text-green-600">{{ alive_count }}</p>
+        <p class="text-[9px] text-gray-400 mt-0.5">活卡</p>
+      </div>
+      <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+        <p class="text-xl font-bold {{ 'text-red-500' if urgent > 0 else 'text-gray-400' }}">{{ urgent }}</p>
+        <p class="text-[9px] text-gray-400 mt-0.5">紧急</p>
+      </div>
+      <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+        <p class="text-xl font-bold {{ 'text-gray-400' if dead_count == 0 else 'text-rose-600' }}">{{ dead_count }}</p>
+        <p class="text-[9px] text-gray-400 mt-0.5">死卡</p>
+      </div>
+
+    </div>
+
+    <!-- 过滤目录 -->
+    <div class="flex items-center gap-2 mb-3">
+      <a href="/" class="px-3.5 py-1.5 rounded-lg text-xs font-medium {{ 'bg-gray-800 text-white shadow-sm' if show == 'alive' else 'bg-gray-100 text-gray-500 hover:bg-gray-200' }}">✅ 活卡</a>
+      <a href="/?show=dead" class="px-3.5 py-1.5 rounded-lg text-xs font-medium {{ 'bg-gray-800 text-white shadow-sm' if show == 'dead' else 'bg-gray-100 text-gray-500 hover:bg-gray-200' }}">📵 死卡</a>
+      <a href="/?show=all" class="px-3.5 py-1.5 rounded-lg text-xs font-medium {{ 'bg-gray-800 text-white shadow-sm' if show == 'all' else 'bg-gray-100 text-gray-500 hover:bg-gray-200' }}">📋 全部</a>
+      <div class="ml-auto flex items-center gap-1 bg-gray-100 rounded-lg px-2.5 py-1.5">
+        <span class="text-gray-400 text-xs">🔍</span>
+        <input type="text" id="searchInput" placeholder="搜号码/运营商..." oninput="filterCards()"
+          class="bg-transparent border-none outline-none text-xs text-gray-600 w-24 sm:w-32 placeholder-gray-300">
+      </div>
+    </div>
+
+    <!-- 添加按钮 -->
+    <button onclick="toggleForm()"
+      class="w-full mb-4 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/50 py-3 text-sm font-medium text-primary-600 hover:bg-primary-100 hover:border-primary-300 transition active:scale-[0.98]">
+      ＋ 添加手机号
+    </button>
+
+    <!-- 添加表单 -->
+    <div id="addForm" class="hidden slide-up mb-4 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <form method="POST" action="/add" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">手机号码 *</label>
+            <input type="tel" name="phone" required placeholder="016-765 6000"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">电讯商</label>
+            <select name="provider"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white">
+              <option value="">选择</option>
+              {% for p in providers %}
+              <option value="{{ p }}">{{ p }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">截止日期 *</label>
+            <input type="date" name="deadline" required value="{{ today }}"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              onchange="calcPreview()">
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">宽限期（天）</label>
+            <input type="number" name="grace_days" min="0" max="365" value="30"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              onchange="calcPreview()" oninput="calcPreview()">
+          </div>
+        </div>
+        <!-- 续费日预览 -->
+        <div class="bg-blue-50 rounded-lg px-3 py-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] text-blue-600 font-medium">📅 续费日（截止+宽限）</span>
+            <span id="renewalPreview" class="text-sm font-bold text-blue-700">—</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-gray-500 mb-1">最低续费金额 (RM)</label>
+          <input type="number" name="min_recharge" step="0.01" min="0" placeholder="5"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">提前提醒</label>
+            <select name="remind_days"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white">
+              <option value="3">3天前</option>
+              <option value="10" selected>10天前</option>
+              <option value="7">7天前</option>
+              <option value="14">14天前</option>
+              <option value="30">30天前</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">卡片状态</label>
+            <select name="is_alive"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white">
+              <option value="1">✅ 活卡</option>
+              <option value="0">📵 死卡</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit"
+            class="flex-1 rounded-lg bg-emerald-500 py-2.5 text-sm font-bold text-white hover:bg-emerald-600 transition active:scale-[0.98]">
+            保存
+          </button>
+          <button type="button" onclick="toggleForm()"
+            class="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition">
+            取消
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 号码列表 -->
+    <div class="space-y-2.5">
+      {% if items|length == 0 %}
+        <div class="text-center py-12">
+          <p class="text-3xl mb-2">📱</p>
+          <p class="text-sm text-gray-400">还没有添加手机号</p>
+          <p class="text-xs text-gray-300 mt-1">点击上方按钮开始添加</p>
+        </div>
+      {% endif %}
+
+      {% for item in items %}
+      {% set border_color = '#6b7280' if item.color == 'gray' else '#ef4444' if item.color == 'red' else '#f97316' if item.color == 'orange' else '#14b8a6' %}
+      <div data-card class="slide-up rounded-xl border bg-white shadow-sm overflow-hidden {{ 'opacity-60' if not item.is_alive }}"
+        style="border-left: 4px solid {{ border_color }};">
+
+        <!-- 顶部 -->
+        <div class="px-4 pt-3 pb-2 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <p class="text-base font-bold {{ 'text-gray-300' if not item.is_alive else 'text-gray-800' }} tracking-wide">{{ item.phone }}</p>
+              {% if not item.is_alive %}
+              <span class="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">📵 死卡</span>
+              {% endif %}
+            </div>
+            <div class="flex items-center gap-2 mt-0.5">
+              {% if item.provider %}
+              <span class="text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ item.provider }}</span>
+              {% endif %}
+              {% if item.plan %}
+              <span class="text-[11px] text-gray-400">{{ item.plan }}</span>
+              {% endif %}
+              {% if item.min_recharge > 0 and item.is_alive %}
+              <span class="text-[11px] text-amber-500 font-medium">RM{{ '%.2f'|format(item.min_recharge) }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold
+              {% if item.color == 'red' %}bg-red-100 text-red-700
+              {% elif item.color == 'orange' %}bg-orange-100 text-orange-700
+              {% elif item.color == 'green' %}bg-teal-100 text-teal-700
+              {% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ item.status }}
+            </span>
+          </div>
+        </div>
+
+        <!-- 日期行 -->
+        <div class="px-4 pb-1 flex items-center gap-3 text-[11px] {{ 'text-gray-200' if not item.is_alive else 'text-gray-400' }}">
+          <span>📅 截止：<strong class="{{ 'text-gray-400' if not item.is_alive else 'text-gray-600' }}">{{ item.deadline }}</strong></span>
+          <span>→ 续费：<strong class="{{ 'text-gray-400' if not item.is_alive else 'text-gray-600' }}">{{ item.renewal_date }}</strong></span>
+          {% if item.grace_days > 0 %}
+          <span class="text-gray-300">(宽限 {{ item.grace_days }}天)</span>
+          {% endif %}
+        </div>
+
+        <!-- 宽限期提示 -->
+        {% if item.in_grace %}
+        <div class="mx-4 mb-1 rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 flex items-center justify-between">
+          <span class="text-[11px] text-red-600 font-medium">⏳ 宽限期内，还剩 {{ item.grace_days_left }} 天续费</span>
+          <span class="text-[10px] text-red-400">{{ item.grace_end }} 截止</span>
+        </div>
+        {% endif %}
+
+        <!-- 底栏 -->
+        <div class="px-4 py-2 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between">
+          <div class="flex items-center gap-1">
+            {% if item.is_alive %}
+            <button onclick="showRenewModal({{ item.id }}, '{{ item.phone }}', '{{ item.deadline }}', {{ item.grace_days }})"
+              class="rounded-lg bg-green-50 border border-green-200 px-2.5 py-1.5 text-[11px] font-medium text-green-700 hover:bg-green-100 transition">
+              续费
+            </button>
+            {% endif %}
+            <a href="/edit/{{ item.id }}"
+              class="rounded-lg px-2.5 py-1.5 text-[11px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+              编辑
+            </a>
+
+
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <p class="text-center text-[10px] text-gray-300 mt-6 mb-4">
+      妖姬马来手机号 v2.1 · 搜索·过滤·续费提醒
+    </p>
+  </div>
+
+  <!-- 续费弹窗 -->
+  <div id="renewModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4" onclick="closeRenewModal(event)">
+    <div class="w-full max-w-sm bg-white rounded-xl p-5 shadow-xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-800">续费 <span id="renewPhone" class="text-primary-600"></span></h3>
+        <button onclick="closeRenewModal()" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+      </div>
+      <form method="POST" id="renewForm" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">新截止日期 *</label>
+            <input type="date" name="new_deadline" id="newDeadlineInput" required
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              onchange="previewModal()">
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-500 mb-1">宽限期（天）</label>
+            <input type="number" name="grace_days" id="graceDaysInput" min="0" max="365"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              onchange="previewModal()" oninput="previewModal()">
+          </div>
+        </div>
+        <div class="bg-blue-50 rounded-lg px-3 py-2 flex items-center justify-between">
+          <span class="text-[11px] text-blue-600 font-medium">📅 续费日（自动）</span>
+          <span id="renewPreviewModal" class="text-sm font-bold text-blue-700">—</span>
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-gray-500 mb-1">已付金额 (RM)</label>
+          <input type="number" name="cost_paid" step="0.01" min="0"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+        </div>
+        <div class="bg-green-50 rounded-lg px-3 py-2 flex items-center gap-2">
+          <input type="checkbox" id="markAlive" checked disabled class="accent-green-500">
+          <label for="markAlive" class="text-[11px] text-green-700 font-medium">续费后自动标记为活卡</label>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit"
+            class="flex-1 rounded-lg bg-green-500 py-2.5 text-sm font-semibold text-white hover:bg-green-600 transition">
+            ✅ 确认续费
+          </button>
+          <button type="button" onclick="closeRenewModal()"
+            class="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition">
+            取消
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function toggleForm() {
+      document.getElementById('addForm').classList.toggle('hidden');
+      if (!document.getElementById('addForm').classList.contains('hidden')) calcPreview();
+    }
+    function calcPreview() {
+      const dl = document.querySelector('input[name="deadline"]').value;
+      const grace = parseInt(document.querySelector('input[name="grace_days"]').value) || 0;
+      const el = document.getElementById('renewalPreview');
+      if (dl) { const d = new Date(dl); d.setDate(d.getDate() + grace); el.textContent = d.toISOString().split('T')[0]; }
+      else el.textContent = '请选截止日期';
+    }
+    let curGrace = 0;
+    function showRenewModal(id, phone, deadline, graceDays) {
+      curGrace = graceDays;
+      document.getElementById('renewPhone').textContent = phone;
+      document.getElementById('renewForm').action = '/renew/' + id;
+      const d = new Date(); d.setDate(d.getDate() + 30);
+      document.getElementById('newDeadlineInput').value = d.toISOString().split('T')[0];
+      document.getElementById('graceDaysInput').value = graceDays;
+      previewModal();
+      document.getElementById('renewModal').classList.remove('hidden');
+      document.getElementById('renewModal').classList.add('flex');
+    }
+    function previewModal() {
+      const dl = document.getElementById('newDeadlineInput').value;
+      const grace = parseInt(document.getElementById('graceDaysInput').value) || curGrace;
+      const el = document.getElementById('renewPreviewModal');
+      if (dl) { const d = new Date(dl); d.setDate(d.getDate() + grace); el.textContent = d.toISOString().split('T')[0]; }
+      else el.textContent = '请选截止日期';
+    }
+    function closeRenewModal(e) {
+      if (e && e.target !== e.currentTarget && !e) return;
+      document.getElementById('renewModal').classList.remove('flex');
+      document.getElementById('renewModal').classList.add('hidden');
+    }
+    document.addEventListener('DOMContentLoaded', calcPreview);
+
+    // 搜索过滤
+    function filterCards() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('[data-card]');
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = (!q || text.includes(q)) ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>
