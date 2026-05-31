@@ -52,6 +52,12 @@ def init_db():
             new_renewal_date DATE NOT NULL,
             notes TEXT NOT NULL DEFAULT ''
         );
+        CREATE TABLE IF NOT EXISTS settlements (
+            id SERIAL PRIMARY KEY,
+            amount REAL NOT NULL DEFAULT 0,
+            notes TEXT NOT NULL DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
     conn.commit()
     cur.close()
@@ -305,7 +311,6 @@ def history():
     query += " ORDER BY rl.renewed_at DESC"
 
     rows = fetch_all(conn, query, params)
-    conn.close()
 
     logs = []
     total_cost = 0
@@ -326,7 +331,16 @@ def history():
         from_date = today.replace(day=1).isoformat()
         to_date = today.isoformat()
 
+    # 结算数据：总已收金额
+    total_received = 0
+    settle_rows = fetch_all(conn, "SELECT COALESCE(SUM(amount), 0) as total FROM settlements")
+    if settle_rows:
+        total_received = settle_rows[0]['total'] or 0
+    outstanding = total_cost - total_received
+    conn.close()
+
     return render_template("history.html", logs=logs, total_cost=total_cost,
+                           total_received=total_received, outstanding=outstanding,
                            from_date=from_date, to_date=to_date)
 
 @app.route("/api/expiring")
@@ -357,6 +371,28 @@ def api_expiring():
         "total_critical": len(expired) + len(in_grace) + len(coming),
         "check_date": today,
     })
+
+@app.route("/settle", methods=["POST"])
+def settle():
+    """记录结算收款"""
+    try:
+        amount = float(request.form.get("amount", 0))
+        notes = request.form.get("notes", "")
+        if amount <= 0:
+            flash("金额必须大于 0", "error")
+            return redirect(url_for("history"))
+
+        conn = get_db()
+        query = "INSERT INTO settlements (amount, notes) VALUES (%s, %s)"
+        cur = conn.cursor()
+        cur.execute(query, (amount, notes))
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash(f"✅ 收到收款 RM {'%.2f' % amount}", "success")
+    except Exception as e:
+        flash(f"❌ 结算失败: {e}", "error")
+    return redirect(url_for("history"))
 
 # ── 旧路由（保留兼容） ──
 @app.route("/archived")
