@@ -21,54 +21,6 @@
   </nav>
 
   <div class="max-w-xl mx-auto px-4 py-4">
-
-    <!-- 结算卡片 -->
-    <div class="bg-white rounded-xl border-2 {% if outstanding <= 0 %}border-emerald-300{% else %}border-amber-300{% endif %} p-4 shadow-sm mb-4">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="text-lg">💰</span>
-          <h2 class="font-bold text-gray-800">结算</h2>
-        </div>
-        {% if outstanding <= 0 %}
-        <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full">✅ 已结清</span>
-        {% endif %}
-      </div>
-
-      <div class="grid grid-cols-3 gap-3 mb-3">
-        <div class="bg-gray-50 rounded-lg p-2.5 text-center">
-          <p class="text-[10px] text-gray-400">总续费</p>
-          <p class="text-lg font-bold text-gray-800">RM {{ '%.2f'|format(total_cost) }}</p>
-        </div>
-        <div class="bg-gray-50 rounded-lg p-2.5 text-center">
-          <p class="text-[10px] text-gray-400">已收到</p>
-          <p class="text-lg font-bold text-emerald-600">RM {{ '%.2f'|format(total_received) }}</p>
-        </div>
-        <div class="{% if outstanding > 0 %}bg-amber-50{% else %}bg-emerald-50{% endif %} rounded-lg p-2.5 text-center">
-          <p class="text-[10px] text-gray-400">未结</p>
-          <p class="text-lg font-bold {% if outstanding > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">
-            RM {{ '%.2f'|format(outstanding) }}
-          </p>
-        </div>
-      </div>
-
-      {% if outstanding > 0 %}
-      <form method="POST" action="/settle" class="flex items-center gap-2">
-        <div class="flex-1">
-          <input type="number" name="amount" step="0.01" min="0.01"
-            placeholder="输入收到金额，如 40.00"
-            value="{{ '%.2f'|format(outstanding) }}"
-            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-amber-400"
-            required>
-        </div>
-        <button type="submit"
-          class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition whitespace-nowrap">
-          记录收款
-        </button>
-      </form>
-      <p class="text-[10px] text-gray-400 mt-1.5">💡 默认填入未结金额，可手动修改</p>
-      {% endif %}
-    </div>
-
     <!-- 日期筛选 -->
     <div class="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mb-4">
       <form method="GET" action="/history" class="flex items-center gap-2">
