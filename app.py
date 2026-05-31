@@ -13,10 +13,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 # ── 数据库连接 ──
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://neondb_owner:npg_z0jm7fRUbYaQ@ep-round-cloud-ao2j0ka6-pooler.c-2.ap-southeast-1.aws.neon.tech/yaoji?sslmode=require"
-)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 def get_db():
     conn = psycopg2.connect(DATABASE_URL)
