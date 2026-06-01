@@ -232,8 +232,10 @@
               class="rounded-lg px-2.5 py-1.5 text-[11px] text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
               编辑
             </a>
-
-
+            <button onclick="showDeleteModal({{ item.id }}, '{{ item.phone }}')"
+              class="rounded-lg px-2.5 py-1.5 text-[11px] text-gray-300 hover:text-red-500 hover:bg-red-50 transition">
+              删除
+            </button>
           </div>
         </div>
       </div>
@@ -243,6 +245,30 @@
     <p class="text-center text-[10px] text-gray-300 mt-6 mb-4">
       妖姬马来手机号 v2.1 · 搜索·过滤·续费提醒
     </p>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4" onclick="closeDeleteModal(event)">
+    <div class="w-full max-w-sm bg-white rounded-xl p-5 shadow-xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-red-600">⚠️ 确认删除</h3>
+        <button onclick="closeDeleteModal()" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+      </div>
+      <p class="text-sm text-gray-600 mb-2">确定要删除 <span id="deletePhone" class="font-bold text-gray-800"></span> 吗？</p>
+      <p class="text-xs text-gray-400 mb-5">删除后可在归档中恢复</p>
+      <div class="flex gap-2">
+        <form method="POST" id="deleteForm" class="flex-1">
+          <button type="submit"
+            class="w-full rounded-lg bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600 transition">
+            🗑️ 确认删除
+          </button>
+        </form>
+        <button type="button" onclick="closeDeleteModal()"
+          class="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition">
+          取消
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- 续费弹窗 -->
@@ -325,6 +351,19 @@
       if (dl) { const d = new Date(dl); d.setDate(d.getDate() + grace); el.textContent = d.toISOString().split('T')[0]; }
       else el.textContent = '请选截止日期';
     }
+    // 删除弹窗
+    function showDeleteModal(id, phone) {
+      document.getElementById('deletePhone').textContent = phone;
+      document.getElementById('deleteForm').action = '/delete/' + id;
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('deleteModal').classList.add('flex');
+    }
+    function closeDeleteModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('deleteModal').classList.remove('flex');
+      document.getElementById('deleteModal').classList.add('hidden');
+    }
+
     function closeRenewModal(e) {
       if (e && e.target !== e.currentTarget && !e) return;
       document.getElementById('renewModal').classList.remove('flex');
